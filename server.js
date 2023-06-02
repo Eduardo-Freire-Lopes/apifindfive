@@ -137,7 +137,7 @@ app.post('/partida', async(req,res) => {
         }
 
         try {
-            const response = await axios.get('http://localhost:3000/palavras/randomWord/');
+            const response = await axios.get('https://findfiveapi.onrender.com/palavras/randomWord');
             const teste = "teste";
             //console.log(response)
             const partida = await new Partida({
