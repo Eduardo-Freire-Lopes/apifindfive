@@ -151,7 +151,7 @@ app.post('/partida', async(req,res) => {
         }
 
         try {
-            const response = await axios.get('https://findfiveapi.onrender.com/palavras/randomWord');
+            const response = await axios.get('https://apifindfive-two.vercel.app/palavras/randomWord');
             
             const partida = new Partida({
                 id_usuario: payload._id,
