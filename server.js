@@ -110,8 +110,14 @@ app.get('/partida', async(req,res) => {
         const secret = process.env.SECRET;
 
         const payload = jwt.verify(token, secret);
+        
+        console.log('token', token);
+        console.log('payload', payload);
+        console.log('ID USUARIO', payload._id);
 
         const partida = await Partida.findOne({id_usuario: payload._id}).select('-id_usuario');
+        
+        console.log('partida', partida);
 
         if(!partida){
             return res.status(402).json({msg: "Esse usuário não tem partida!"})
@@ -135,13 +141,17 @@ app.post('/partida', async(req,res) => {
 
         const payload = jwt.verify(token, secret);
         const partidaCheck = await Partida.findOne({id_usuario: payload._id})
+        
+        console.log('token', token);
+        console.log('payload', payload);
+        console.log('ID USUARIO', payload._id);
 
         if(partidaCheck){
             return res.status(402).json({msg: "Já existe essa partida!"})
         }
 
         try {
-            const response = await axios.get('http://localhost:3036/palavras/randomWord');
+            const response = await axios.get('https://findfiveapi.onrender.com/palavras/randomWord');
             
             const partida = new Partida({
                 id_usuario: payload._id,
@@ -149,6 +159,8 @@ app.post('/partida', async(req,res) => {
                 tentativas_palavras: [],
                 tentativas_estados: []
             })
+            
+            console.log('partida', partida);
             try {
                 await partida.save();
 
