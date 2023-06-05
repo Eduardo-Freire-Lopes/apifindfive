@@ -104,15 +104,19 @@ app.get('/partida', async(req,res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(" ")[1];
 
-    if(!token) res.status(401).json({msg: "Acesso Negado!"});
+    if(!token) return res.status(401).json({msg: "Acesso Negado!"});
 
     try {
         const secret = process.env.SECRET;
 
         const payload = jwt.verify(token, secret);
 
-        const partida = await Partida.findOne({id_usuario: payload._id})
-        res.status(200).json(partida.palavra_sorteada)
+        const partida = await Partida.findOne({id_usuario: payload._id}).select('-id_usuario');
+
+        if(!partida){
+            return res.status(402).json({msg: "Esse usuário não tem partida!"})
+        }
+        return res.status(200).json(partida)
     }
     catch (erro){
         return res.status(400).json({msg: "Token inválido!"})
@@ -123,8 +127,8 @@ app.get('/partida', async(req,res) => {
 app.post('/partida', async(req,res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(" ")[1];
-
-    if(!token) res.status(401).json({msg: "Acesso Negado!"});
+    
+    if(!token) return res.status(401).json({msg: "Acesso Negado!"});
 
     try {
         const secret = process.env.SECRET;
@@ -137,24 +141,25 @@ app.post('/partida', async(req,res) => {
         }
 
         try {
-            const response = await axios.get('https://findfiveapi.onrender.com/palavras/randomWord');
-            const teste = "teste";
-            //console.log(response)
-            const partida = await new Partida({
+            const response = await axios.get('http://localhost:3036/palavras/randomWord');
+            
+            const partida = new Partida({
                 id_usuario: payload._id,
                 palavra_sorteada: response.data.name,
                 tentativas_palavras: [],
                 tentativas_estados: []
             })
             try {
-                await partida.save()
-                return res.status(200).json(partida.palavra_sorteada);
+                await partida.save();
+
+                const resPartida = partida.toObject();
+                delete resPartida.id_usuario;
+
+                return res.status(200).json(resPartida);
             } catch (error) {
                 
             }
     
-            // Processar a resposta da API
-            //console.log(response.data);
           } catch (error) {
             // Lidar com erros
             console.error('Erro na chamada da API:', error);
@@ -164,7 +169,7 @@ app.post('/partida', async(req,res) => {
     catch (erro){
         return res.status(400).json({msg: "Token inválido!", token:token})
     }
-})
+});
 
 //Partida Delete
 app.delete('/partida', async (req, res) => {
@@ -188,6 +193,38 @@ app.delete('/partida', async (req, res) => {
       return res.status(400).json({ msg: "Token inválido!", token: token });
     }
 });
+
+//atualizar partida
+app.put('/partida', async(req,res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if(!token) return res.status(401).json({msg: "Acesso Negado!"});
+
+    const {palavra, estates} = req.body.data
+
+    try {
+        const secret = process.env.SECRET;
+
+        const payload = jwt.verify(token, secret);
+
+        const partida = await Partida.findOne({id_usuario: payload._id}).select('-id_usuario');
+
+        if(!partida){
+            return res.status(402).json({msg: "Esse usuário não tem partida!"})
+        }
+
+        partida.tentativas_palavras.push(palavra);
+        partida.tentativas_estados.push(estates);
+
+        await partida.save();
+
+        return res.status(200).json(partida)
+    }
+    catch (erro){
+        return res.status(400).json({msg: "Token inválido!"})
+    }
+})
 
 mongoose.set("strictQuery", false)
 mongoose.
